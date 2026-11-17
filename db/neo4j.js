@@ -31,8 +31,24 @@ function verifyConnectivity() {
   return getDriver().verifyConnectivity();
 }
 
+async function ensureSchema() {
+  const session = createSession();
+  try {
+    await session.run(
+      'CREATE CONSTRAINT user_username_unique IF NOT EXISTS FOR (user:User) REQUIRE user.username IS UNIQUE'
+    );
+  } finally {
+    await session.close();
+  }
+}
+
 function closeDriver() {
   return driver ? driver.close() : Promise.resolve();
 }
 
-module.exports = { closeDriver, createSession, verifyConnectivity };
+module.exports = {
+  closeDriver,
+  createSession,
+  ensureSchema,
+  verifyConnectivity,
+};

@@ -28,6 +28,11 @@ power-ups such as Double or Nothing.
 
 To stop the server, press `Ctrl+C` in the terminal.
 
+The EJS page templates are in `pages/`. Account registration creates a `User`
+node with a scrypt password hash. The server creates a uniqueness constraint
+for usernames at startup. Login and password recovery still need to be
+implemented.
+
 ## Game API
 
 The API uses JSON request and response bodies:

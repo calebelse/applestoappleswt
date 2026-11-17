@@ -3,22 +3,59 @@ require('dotenv').config();
 const express = require('express');
 const path = require('path');
 const gamesRouter = require('./routes/games');
-const { closeDriver, verifyConnectivity } = require('./db/neo4j');
+const usersRouter = require('./routes/users');
+const {
+  closeDriver,
+  ensureSchema,
+  verifyConnectivity,
+} = require('./db/neo4j');
 
 const app = express();
 const port = Number(process.env.PORT || 3000);
 
+app.set('view engine', 'ejs');
+app.set('views', path.join(__dirname, 'pages'));
+
 app.use(express.json({ limit: '100kb' }));
+app.use(express.urlencoded({ extended: false }));
 app.use('/api/games', gamesRouter);
+app.use('/api', usersRouter);
+
+app.get('/', (req, res) => {
+  res.render('index', {
+    registered: req.query.registered === '1',
+  });
+});
+
+app.get('/register', (req, res) => {
+  res.render('register');
+});
+
+app.get('/forgot-password', (req, res) => {
+  res.render('forgot-password');
+});
+
+app.get('/game', (req, res) => {
+  res.render('game');
+});
+
+app.get('/master', (req, res) => {
+  res.render('master');
+});
+
+app.post('/api/login', (req, res) => {
+  res.status(501).render('index', {
+    error: 'Login is not implemented yet.',
+  });
+});
+
 app.use('/api', (req, res) => {
   res.status(404).json({ error: 'API route not found' });
 });
-// Serve static files from the "pages" directory takes to index.html
-app.use(express.static(path.join(__dirname, 'pages')));
+
 app.use((req, res) => {
   res.status(404).send('Page not found');
 });
-
 
 app.use((error, req, res, next) => {
   if (res.headersSent) {
@@ -34,6 +71,7 @@ app.use((error, req, res, next) => {
 
 async function startServer() {
   await verifyConnectivity();
+  await ensureSchema();
   const server = app.listen(port, () => {
     console.log(`Server running on http://localhost:${port}`);
   });
@@ -59,7 +97,10 @@ async function startServer() {
 }
 
 startServer().catch(async (error) => {
-  console.error('Unable to start the server. Check your Neo4j settings and connection:', error);
+  console.error(
+    'Unable to start the server. Check your Neo4j settings and connection:',
+    error
+  );
   try {
     await closeDriver();
   } catch (closeError) {
