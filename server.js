@@ -1,7 +1,9 @@
 require('dotenv').config();
 
 const express = require('express');
+const session = require('express-session');
 const path = require('path');
+const { randomBytes } = require('crypto');
 const gamesRouter = require('./routes/games');
 const usersRouter = require('./routes/users');
 const {
@@ -12,12 +14,32 @@ const {
 
 const app = express();
 const port = Number(process.env.PORT || 3000);
+const sessionSecret =
+  process.env.SESSION_SECRET || randomBytes(32).toString('hex');
+
+if (process.env.NODE_ENV === 'production' && !process.env.SESSION_SECRET) {
+  throw new Error('Set SESSION_SECRET in production.');
+}
 
 app.set('view engine', 'ejs');
 app.set('views', path.join(__dirname, 'pages'));
 
 app.use(express.json({ limit: '100kb' }));
 app.use(express.urlencoded({ extended: false }));
+app.use(
+  session({
+    name: 'apples.sid',
+    secret: sessionSecret,
+    resave: false,
+    saveUninitialized: false,
+    cookie: {
+      httpOnly: true,
+      sameSite: 'lax',
+      secure: process.env.NODE_ENV === 'production',
+      maxAge: 24 * 60 * 60 * 1000,
+    },
+  })
+);
 app.use('/api/games', gamesRouter);
 app.use('/api', usersRouter);
 
@@ -35,18 +57,19 @@ app.get('/forgot-password', (req, res) => {
   res.render('forgot-password');
 });
 
+app.get('/setup', (req, res) => {
+  if (!req.session.user) {
+    return res.redirect('/');
+  }
+  res.render('setup', { username: req.session.user.username });
+});
+
 app.get('/game', (req, res) => {
   res.render('game');
 });
 
 app.get('/master', (req, res) => {
   res.render('master');
-});
-
-app.post('/api/login', (req, res) => {
-  res.status(501).render('index', {
-    error: 'Login is not implemented yet.',
-  });
 });
 
 app.use('/api', (req, res) => {

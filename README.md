@@ -30,8 +30,10 @@ To stop the server, press `Ctrl+C` in the terminal.
 
 The EJS page templates are in `pages/`. Account registration creates a `User`
 node with a scrypt password hash. The server creates a uniqueness constraint
-for usernames at startup. Login and password recovery still need to be
-implemented.
+for usernames at startup. Valid login credentials create a session and redirect
+to `/setup`; that page requires login. The default session store is in-memory
+and is intended for local development, not production. Set a strong
+`SESSION_SECRET` in `.env`. Password recovery still needs to be implemented.
 
 ## Game API
 
